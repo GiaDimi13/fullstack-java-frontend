@@ -74,7 +74,7 @@ export default function ProductForm({ onSubmit, initialData, title, onCancel }: 
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Price</label>
+            <label className="block text-sm font-medium mb-1">Price (€)</label>
             <input
               type="number"
               step="0.01"

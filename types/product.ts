@@ -1,7 +1,21 @@
 export enum Category {
     ELECTRONICS = 'ELECTRONICS',
     CLOTHING = 'CLOTHING',
-    FOOD = 'FOOD',
+    FOOD = 'FOOD'
+}
+
+// Helper function to get display name for category
+export function getCategoryDisplayName(category: Category): string {
+    switch (category) {
+        case Category.ELECTRONICS:
+            return 'Electronics';
+        case Category.CLOTHING:
+            return 'Clothing';
+        case Category.FOOD:
+            return 'Food';
+        default:
+            return category;
+    }
 }
 
 export interface ProductResponse {
@@ -23,4 +37,6 @@ export interface ProductRequest {
   sustainable: boolean;
 }
 
-export type Product = ProductResponse; 
+export interface Product extends ProductRequest {
+  id: number
+} 

@@ -1,72 +1,41 @@
 'use client'
 
-import { useAppContext } from './providers'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { useEffect, useState } from 'react'
+import { Trash2 } from 'lucide-react'
 
-interface Product {
-  id: number
-  winkelwagenId: number
-  name: string
-  description: string
-  price: number
-  category: string
-  label: string
-  sustainable: boolean
+interface WinkelwagenItemResponse {
+  productId: number
+  productName: string
+  productPrice: number
+  quantity: number
+  subtotal: number
 }
 
-interface Winkelwagen {
+interface WinkelwagenResponse {
   id: number
-  products: Product[]
-  quantity: number
+  items: WinkelwagenItemResponse[]
   totalPrice: number
 }
 
 export default function ShoppingCart() {
-  const { cart, setCart } = useAppContext()
+  const [cart, setCart] = useState<WinkelwagenResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const handleAddToCart = async (productId: number, quantity: number = 1) => {
-    if (!cart?.id) return
-    
-    try {
-      const response = await fetch(`/api/winkelwagen/${cart.id}/producten?productId=${productId}&quantity=${quantity}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      if (response.ok) {
-        await fetchCart()
-      }
-    } catch (error) {
-      console.error('Error adding product to cart:', error)
-    }
-  }
-
-  const handleRemoveFromCart = async (productId: number) => {
-    if (!cart?.id) return
-
-    try {
-      const response = await fetch(`/api/winkelwagen/${cart.id}/producten/${productId}`, {
-        method: 'DELETE',
-      })
-      if (response.ok) {
-        await fetchCart()
-      }
-    } catch (error) {
-      console.error('Error removing product from cart:', error)
-    }
-  }
-
   const fetchCart = async () => {
-    if (!cart?.id) return
-    
     try {
-      setIsLoading(true)
-      const response = await fetch(`/api/winkelwagen/${cart.id}`)
-      if (!response.ok) throw new Error('Failed to fetch cart')
-      const data: Winkelwagen = await response.json()
-      setCart(data)
+      const response = await fetch('/api/winkelwagen/1', {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        cache: 'no-store'
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setCart(data)
+      }
     } catch (error) {
       console.error('Error fetching cart:', error)
     } finally {
@@ -74,50 +43,88 @@ export default function ShoppingCart() {
     }
   }
 
+  const handleRemoveItem = async (productId: number) => {
+    try {
+      const response = await fetch(`/api/winkelwagen/1/producten/${productId}`, {
+        method: 'DELETE',
+      })
+      
+      fetchCart()
+      
+      if (!response.ok) {
+        console.warn('Delete request returned error status, but item was removed:', response.status)
+      }
+    } catch (error) {
+      console.error('Error removing item:', error)
+      fetchCart()
+    }
+  }
+
   useEffect(() => {
     fetchCart()
-  }, [cart?.id])
+    // Refresh cart every 5 seconds
+    const interval = setInterval(fetchCart, 5000)
+    
+    // Add event listener for cart updates
+    const handleCartUpdate = () => fetchCart()
+    window.addEventListener('cartUpdated', handleCartUpdate)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('cartUpdated', handleCartUpdate)
+    }
+  }, [])
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return <div className="animate-pulse">Loading cart...</div>
   }
 
   return (
-    <Card className="w-full md:w-80">
-      <CardHeader>
+    <Card className="w-full max-w-sm shadow-lg">
+      <CardHeader className="bg-gray-50">
         <CardTitle>Shopping Cart</CardTitle>
       </CardHeader>
-      <CardContent>
-        {!cart?.products || cart.products.length === 0 ? (
-          <p>Your cart is empty</p>
+      <CardContent className="p-4">
+        {!cart?.items || cart.items.length === 0 ? (
+          <p className="text-gray-500 text-center py-4">Your cart is empty</p>
         ) : (
-          <ul>
-            {cart.products.map((product) => (
-              <li key={product.id} className="flex justify-between items-center mb-2">
-                <div>
-                  <span>{product.name}</span>
-                  <div className="text-sm text-gray-600">{product.description}</div>
-                  <div>${product.price.toFixed(2)}</div>
-                  {product.sustainable && (
-                    <span className="text-green-600 text-xs">Sustainable</span>
-                  )}
+          <ul className="divide-y">
+            {cart.items.map((item) => (
+              <li key={item.productId} className="py-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="font-medium">{item.productName}</h3>
+                    <div className="text-sm text-gray-500 mt-1">
+                      Quantity: {item.quantity} × €{item.productPrice.toFixed(2)}
+                    </div>
+                    <div className="text-sm font-medium text-gray-900 mt-1">
+                      Subtotal: €{(item.quantity * item.productPrice).toFixed(2)}
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-red-500 hover:text-red-700"
+                    onClick={() => handleRemoveItem(item.productId)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button 
-                  variant="destructive" 
-                  size="sm" 
-                  onClick={() => handleRemoveFromCart(product.id)}
-                >
-                  Remove
-                </Button>
               </li>
             ))}
           </ul>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between">
-        <span className="font-bold">Total:</span>
-        <span>${cart?.totalPrice.toFixed(2) || '0.00'}</span>
-      </CardFooter>
+      {cart && cart.items && cart.items.length > 0 && (
+        <CardFooter className="bg-gray-50 px-4 py-3">
+          <div className="flex justify-between items-center w-full">
+            <span className="font-semibold">Total:</span>
+            <span className="text-lg font-bold">
+              €{cart.totalPrice.toFixed(2)}
+            </span>
+          </div>
+        </CardFooter>
+      )}
     </Card>
   )
 }

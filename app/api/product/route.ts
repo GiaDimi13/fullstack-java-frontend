@@ -17,7 +17,16 @@ export async function POST(request: Request) {
     },
     body: JSON.stringify(product),
   })
-  return NextResponse.json(await response.json(), { status: response.status })
+
+  if (!response.ok) {
+    return NextResponse.json(
+      { error: 'Failed to create product' }, 
+      { status: response.status }
+    )
+  }
+
+  const data = await response.json()
+  return NextResponse.json(data, { status: response.status })
 }
 
 export async function PUT(request: Request) {
