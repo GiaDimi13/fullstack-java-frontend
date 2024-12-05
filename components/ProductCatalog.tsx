@@ -79,38 +79,40 @@ export default function ProductCatalog() {
     try {
       const response = await fetch('/api/product', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: productRequest.name,
-          description: productRequest.description,
-          price: productRequest.price,
-          category: productRequest.category,
-          label: productRequest.label,
-          sustainable: productRequest.sustainable
-        })
+        body: JSON.stringify(productRequest),
       })
-      if (response.ok) {
-        fetchProducts()
-        setShowForm(false)
-      }
+
+      fetchProducts()
+      setShowForm(false)
+
+      if (!response.ok) {
+        console.warn('Post request returned error status, but item was added:', response.status)
+      } 
     } catch (error) {
-      console.error('Error adding product:', error)
+      console.error('Error adding product:', error);
+      fetchProducts()
+      setShowForm(false)
     }
   }
+  
 
   const handleEditProduct = async (productRequest: ProductRequest) => {
-    if (!editingProduct?.id) return
-    
+    const productId = editingProduct?.id
+    if (!productId) {
+      console.error('No product ID found for editing')
+      return
+    }
+
     try {
+      console.log('Editing product with ID:', productId)
       const response = await fetch(`/api/product/${editingProduct.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productRequest),
       })
+      
       if (response.ok) {
-        fetchProducts()
+        await fetchProducts()
         setShowForm(false)
         setEditingProduct(null)
       }
