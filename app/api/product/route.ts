@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-const API_BASE_URL = 'http://localhost:8090'
+const API_BASE_URL = 'http://localhost:8083/product'
 
 export async function GET() {
   const response = await fetch(`${API_BASE_URL}/api/product`)

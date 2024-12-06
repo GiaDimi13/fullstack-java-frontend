@@ -15,7 +15,7 @@ export default function UserToggle() {
         onCheckedChange={(checked) => setUserRole(checked ? 'admin' : 'customer')}
       />
       <Label htmlFor="user-toggle">
-        {userRole === 'admin' ? 'Business Administrator' : 'Customer'}
+        {userRole === 'admin' ? 'Administrator' : 'Customer'}
       </Label>
     </div>
   )

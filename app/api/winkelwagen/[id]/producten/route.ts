@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-const API_BASE_URL = 'http://localhost:8091'
+const API_BASE_URL = 'http://localhost:8083/winkelwagen'
 
 export async function POST(
   request: Request,
